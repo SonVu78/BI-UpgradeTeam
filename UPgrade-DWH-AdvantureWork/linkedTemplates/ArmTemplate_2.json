@@ -1,0 +1,2066 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "UPgrade-DWH-AdvantureWork"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/DimCustomers')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DimCustomers",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT DISTINCT\n    SC.CustomerID,\n    PP.FirstName,\n    PP.LastName,\n    PEA.EmailAddress,\n    PP.EmailPromotion,\n    Ph.PhoneNumber,\n    ST.Name AS TerritoryName,\n\tST.CountryRegionCode,\n\tSCR.Name as CountryRegionName,\n    CAST(CASE \n            WHEN SC.CustomerID NOT IN (\n                SELECT DISTINCT CustomerID \n                FROM [Sales].[SalesOrderHeader]\n            ) \n            THEN 0 \n            ELSE 1 \n         END AS BIT) AS Transaction_flag\nFROM \n    [Sales].[Customer] SC\nLEFT JOIN \n    [Person].[Person] PP ON SC.PersonID = PP.BusinessEntityID\nLEFT JOIN \n    [Person].[PersonPhone] Ph ON Ph.BusinessEntityID = PP.BusinessEntityID\nLEFT JOIN \n    [Person].[EmailAddress] PEA ON PEA.BusinessEntityID = SC.PersonID\nLEFT JOIN [Sales].[SalesTerritory] ST on ST.TerritoryID = SC.TerritoryID\nLEFT JOIN [Person].[CountryRegion] SCR ON SCR.CountryRegionCode = ST.CountryRegionCode\nLEFT JOIN [Person].[BusinessEntityAddress] BEA ON BEA.BusinessEntityID = SC.CustomerID\nORDER BY CustomerID\n",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "FirstName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "LastName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "EmailAddress",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "EmailAddress",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "EmailPromotion",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "EmailPromotion",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "PhoneNumber",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "TerritoryName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "TerritoryName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CountryRegionName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "CountryRegionName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Transaction_flag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										},
+										"sink": {
+											"name": "TransactionFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_DimCustomers_Source",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_DimCustomers_DW",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-06T19:59:04Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimEmployees')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DimEmployee",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT HE.BusinessEntityID AS EmployeeID, HE.NationalIDNumber, he.LoginID,\nHE.JobTitle, HE.BirthDate, HE.Gender, HE.CurrentFlag, HE.HireDate, HE.SalariedFlag, \nHE.VacationHours, HE.SickLeaveHours, \nSP.CountryRegionCode,\nCR.Name AS CountryRegionName,\nCAST(CASE\n\tWHEN HE.JobTitle LIKE '%Sales%' AND HE.BusinessEntityID!=273\n            THEN 0 \n            ELSE 1 \n         END AS BIT) AS SalesPersonFlag\nFROM [HumanResources].[Employee] HE\nJOIN [Person].[BusinessEntityAddress] BEA\nON HE.BusinessEntityID = BEA.BusinessEntityID\nJOIN [Person].[Address] PA\nON PA.AddressID = BEA.AddressID\nJOIN [Person].[StateProvince] SP\nON SP.StateProvinceID = PA.StateProvinceID\nJOIN [Person].[CountryRegion] CR\nON CR.CountryRegionCode = SP.CountryRegionCode\n",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "EmployeeID",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "EmployeeID",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "NationalIDNumber",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "NationalIDNumber",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "LoginID",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "LoginID",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "JobTitle",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "JobTitle",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "BirthDate",
+											"type": "DateTime",
+											"physicalType": "date"
+										},
+										"sink": {
+											"name": "BirthDate",
+											"type": "DateTime",
+											"physicalType": "date"
+										}
+									},
+									{
+										"source": {
+											"name": "Gender",
+											"type": "String",
+											"physicalType": "nchar"
+										},
+										"sink": {
+											"name": "Gender",
+											"type": "String",
+											"physicalType": "nchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CurrentFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										},
+										"sink": {
+											"name": "CurrentFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										}
+									},
+									{
+										"source": {
+											"name": "HireDate",
+											"type": "DateTime",
+											"physicalType": "date"
+										},
+										"sink": {
+											"name": "HireDate",
+											"type": "DateTime",
+											"physicalType": "date"
+										}
+									},
+									{
+										"source": {
+											"name": "SalariedFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										},
+										"sink": {
+											"name": "SalariedFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										}
+									},
+									{
+										"source": {
+											"name": "VacationHours",
+											"type": "Int16",
+											"physicalType": "smallint"
+										},
+										"sink": {
+											"name": "VacationHours",
+											"type": "Int16",
+											"physicalType": "smallint"
+										}
+									},
+									{
+										"source": {
+											"name": "SickLeaveHours",
+											"type": "Int16",
+											"physicalType": "smallint"
+										},
+										"sink": {
+											"name": "SickLeaveHours",
+											"type": "Int16",
+											"physicalType": "smallint"
+										}
+									},
+									{
+										"source": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CountryRegionName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "CountryRegionName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesPersonFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										},
+										"sink": {
+											"name": "SalesPersonFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_DimEmployee_Source",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_DimEmployee_DW",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-06T20:08:59Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimProducts')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DimProducts",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "select Production.Product.ProductID, Production.Product.Name as ProductName, \nProduction.ProductCategory.Name as Category_name,  Production.ProductSubcategory.Name as Subcategory_name,\nProduction.Product.StandardCost, Production.Product.FinishedGoodsFlag, Production.Product.Color, \nProduction.Product.SafetyStockLevel, Production.Product.ReorderPoint, Production.Product.ListPrice,\nProduction.Product.Size, Production.Product.Weight, Production.Product.DaysToManufacture, Production.Product.ProductLine, Production.Product.Class,\nProduction.Product.Style\nfrom  Production.Product \nleft join Production.ProductCategory \non  Production.ProductCategory.ProductCategoryID = Production.Product.ProductSubcategoryID\nleft join Production.ProductSubcategory \non Production.ProductSubcategory.ProductSubcategoryID = Production.Product.ProductSubcategoryID\n",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "ProductID",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "ProductID",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "ProductName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "FinishedGoodsFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										},
+										"sink": {
+											"name": "FinishedGoodsFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										}
+									},
+									{
+										"source": {
+											"name": "Color",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Color",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "SafetyStockLevel",
+											"type": "Int16",
+											"physicalType": "smallint"
+										},
+										"sink": {
+											"name": "SafetyStockLevel",
+											"type": "Int16",
+											"physicalType": "smallint"
+										}
+									},
+									{
+										"source": {
+											"name": "ReorderPoint",
+											"type": "Int16",
+											"physicalType": "smallint"
+										},
+										"sink": {
+											"name": "ReorderPoint",
+											"type": "Int16",
+											"physicalType": "smallint"
+										}
+									},
+									{
+										"source": {
+											"name": "StandardCost",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										},
+										"sink": {
+											"name": "StandardCost",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										}
+									},
+									{
+										"source": {
+											"name": "ListPrice",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										},
+										"sink": {
+											"name": "ListPrice",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										}
+									},
+									{
+										"source": {
+											"name": "Size",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Size",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Weight",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 2,
+											"precision": 8
+										},
+										"sink": {
+											"name": "Weight",
+											"type": "Decimal",
+											"physicalType": "decimal",
+											"scale": 2,
+											"precision": 8
+										}
+									},
+									{
+										"source": {
+											"name": "DaysToManufacture",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "DaysToManufacture",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "ProductLine",
+											"type": "String",
+											"physicalType": "nchar"
+										},
+										"sink": {
+											"name": "ProductLine",
+											"type": "String",
+											"physicalType": "nchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Class",
+											"type": "String",
+											"physicalType": "nchar"
+										},
+										"sink": {
+											"name": "Class",
+											"type": "String",
+											"physicalType": "nchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Style",
+											"type": "String",
+											"physicalType": "nchar"
+										},
+										"sink": {
+											"name": "Style",
+											"type": "String",
+											"physicalType": "nchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Subcategory_name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "ProductSubcategoryName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Category_name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "ProductCategoryName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_DimProducts_Source",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_DimProducts_DW",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-04T21:41:54Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimPromotion')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DimPromotion",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT [SpecialOfferID]\n      ,[Description]\n      ,[DiscountPct]\n      ,[Type]\n      ,[Category]\n      ,[StartDate]\n      ,[EndDate]\n      ,[MinQty]\n      ,[MaxQty]\n  FROM [Sales].[SpecialOffer]",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "SpecialOfferID",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "PromotionID",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "Description",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Description",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "DiscountPct",
+											"type": "Decimal",
+											"physicalType": "smallmoney",
+											"scale": 4,
+											"precision": 10
+										},
+										"sink": {
+											"name": "DiscountPct",
+											"type": "Decimal",
+											"physicalType": "smallmoney",
+											"scale": 4,
+											"precision": 10
+										}
+									},
+									{
+										"source": {
+											"name": "Type",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Type",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Category",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Category",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "StartDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "StartDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										}
+									},
+									{
+										"source": {
+											"name": "EndDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "EndDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										}
+									},
+									{
+										"source": {
+											"name": "MinQty",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "MinQty",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "MaxQty",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "MaxQty",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_DimPromotion_Source",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_DimPromotion_DW",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-04T21:10:22Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimSalesTerritory')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DimSalesTerritory",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT [TerritoryID]\n      ,[Name]\n      ,[CountryRegionCode]\n      ,[Group]\n      ,[SalesYTD]\n      ,[SalesLastYear]\n      ,[CostYTD]\n      ,[CostLastYear]\n  FROM [Sales].[SalesTerritory]\n",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "TerritoryID",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "TerritoryID",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "TerritoryName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "Group",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "TerritoryGroup",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesYTD",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										},
+										"sink": {
+											"name": "SalesYTD",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										}
+									},
+									{
+										"source": {
+											"name": "SalesLastYear",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										},
+										"sink": {
+											"name": "SalesLastYear",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										}
+									},
+									{
+										"source": {
+											"name": "CostYTD",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										},
+										"sink": {
+											"name": "CostYTD",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										}
+									},
+									{
+										"source": {
+											"name": "CostLastYear",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										},
+										"sink": {
+											"name": "CostLastYear",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_DimSalesTerritory_Source",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_DimSalesTerritory_DW",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-04T21:51:12Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimShipingMethod')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DimShipingMethod",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT [ShipMethodID]\n      ,[Name]\n      ,[ShipBase]\n      ,[ShipRate]\n  FROM [Purchasing].[ShipMethod]\n",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "ShipMethodID",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "ShipMethodID",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "ShipBase",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										},
+										"sink": {
+											"name": "ShipBase",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										}
+									},
+									{
+										"source": {
+											"name": "ShipRate",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										},
+										"sink": {
+											"name": "ShipRate",
+											"type": "Decimal",
+											"physicalType": "money",
+											"scale": 4,
+											"precision": 19
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_DimShipingMethod_Source",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_DimShipingMethod_DW",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-04T21:51:12Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimVendors')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DimVendors",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "select PV.BusinessEntityID AS VendorID, PV.Name as VendorName, PV.ActiveFlag, PV.CreditRating, \nPV.PreferredVendorStatus,\nSP.CountryRegionCode, CR.Name as CountryRegionName, PA.City\nfrom [Purchasing].[Vendor] PV\nJOIN [Person].[BusinessEntity] PB\nON PV.BusinessEntityID=PB.BusinessEntityID\nJOIN [Person].[BusinessEntityAddress] BEA\nON BEA.BusinessEntityID = PV.BusinessEntityID\nJOIN [Person].[Address] PA\nON PA.AddressID = BEA.AddressID\nJOIN [Person].[StateProvince] SP\nON SP.StateProvinceID = PA.StateProvinceID\nJOIN [Person].[CountryRegion] CR\nON CR.CountryRegionCode = SP.CountryRegionCode\n",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"sqlWriterUseTableLock": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "VendorID",
+											"type": "Int32",
+											"physicalType": "int"
+										},
+										"sink": {
+											"name": "VendorID",
+											"type": "Int32",
+											"physicalType": "int"
+										}
+									},
+									{
+										"source": {
+											"name": "VendorName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "ActiveFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										},
+										"sink": {
+											"name": "ActiveFlag",
+											"type": "Boolean",
+											"physicalType": "bit"
+										}
+									},
+									{
+										"source": {
+											"name": "CreditRating",
+											"type": "Byte",
+											"physicalType": "tinyint"
+										},
+										"sink": {
+											"name": "CreditRating",
+											"type": "Byte",
+											"physicalType": "tinyint"
+										}
+									},
+									{
+										"source": {
+											"name": "PreferredVendorStatus",
+											"type": "Boolean",
+											"physicalType": "bit"
+										},
+										"sink": {
+											"name": "PreferredVendorStatus",
+											"type": "Boolean",
+											"physicalType": "bit"
+										}
+									},
+									{
+										"source": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "CountryRegionCode",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "CountryRegionName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "CountryRegionName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "City",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "City",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "ds_DimVendors_Source",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "ds_DimVendors_DW",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-06T20:18:42Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/FactPurchasing')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"linkedService": {
+								"referenceName": "ls_Source_DB",
+								"type": "LinkedServiceReference"
+							},
+							"name": "datasource"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimVendors_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimVendors"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimShipingMethod_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimShipingMethod"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimEmployee_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimEmployee"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_dim_date",
+								"type": "DatasetReference"
+							},
+							"name": "DimDate"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimProducts_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimProduct"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ds_FactPurchasingNew_DW",
+								"type": "DatasetReference"
+							},
+							"name": "FactPurchasing"
+						}
+					],
+					"transformations": [
+						{
+							"name": "SelectDimVendors"
+						},
+						{
+							"name": "lookup1"
+						},
+						{
+							"name": "lookup2"
+						},
+						{
+							"name": "lookup3"
+						},
+						{
+							"name": "lookup4"
+						},
+						{
+							"name": "lookup5"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          PurchaseOrderKey as integer,",
+						"          EmployeeKey as integer,",
+						"          VendorKey as integer,",
+						"          ShipMethodKey as integer,",
+						"          ProductKey as integer,",
+						"          UnitPrice as decimal(19,4),",
+						"          OrderQty as short,",
+						"          ReceivedQty as decimal(8,2),",
+						"          RejectedQty as decimal(8,2),",
+						"          StockedQty as decimal(9,2),",
+						"          AverageLeadTime as integer,",
+						"          DateKey as date,",
+						"          LastReceiptCost as decimal(19,4),",
+						"          StandardPrice as decimal(19,4),",
+						"          MinOrderQty as integer,",
+						"          MaxOrderQty as integer,",
+						"          OrderDate as timestamp,",
+						"          ShipDate as timestamp,",
+						"          Status as integer,",
+						"          TaxAmt as decimal(19,4),",
+						"          TotalDue as decimal(19,4),",
+						"          Freight as decimal(19,4)",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'query',",
+						"     store: 'sqlserver',",
+						"     query: 'SELECT POH.PurchaseOrderID as PurchaseOrderKey, POH.EmployeeID AS EmployeeKey,\\nPOH.VendorID as VendorKey, POH.ShipMethodID as ShipMethodKey,\\nOD.ProductID as ProductKey, od.UnitPrice, OD.OrderQty, OD.ReceivedQty, OD.RejectedQty, od.StockedQty,\\nPV.AverageLeadTime, -- THỜI TB NHẬN ĐƯỢC HÀNG\\nconvert(date,PV.LastReceiptDate,2) as DateKey,\\nPV.LastReceiptCost, PV.StandardPrice, PV.MinOrderQty, PV.MaxOrderQty\\n,POH.OrderDate, POH.ShipDate, POH.Status,\\nPOH.TaxAmt, POH.TotalDue, POH.Freight\\nFROM [Purchasing].[PurchaseOrderHeader] POH\\nJOIN [Purchasing].[PurchaseOrderDetail] OD\\nON POH.PurchaseOrderID = OD.PurchaseOrderID\\nJOIN [Purchasing].[Vendor] V\\nON V.BusinessEntityID = POH.VendorID\\nJOIN [Purchasing].[ProductVendor] PV\\nON PV.BusinessEntityID = V.BusinessEntityID',",
+						"     isolationLevel: 'READ_COMMITTED') ~> datasource",
+						"source(output(",
+						"          VendorKey as integer,",
+						"          VendorID as integer,",
+						"          Name as string,",
+						"          ActiveFlag as boolean,",
+						"          CreditRating as integer,",
+						"          PreferredVendorStatus as boolean,",
+						"          TerritoryKey as integer,",
+						"          City as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimVendors",
+						"source(output(",
+						"          ShipMethodKey as integer,",
+						"          ShipMethodID as integer,",
+						"          Name as string,",
+						"          ShipBase as decimal(19,4),",
+						"          ShipRate as decimal(19,4)",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimShipingMethod",
+						"source(output(",
+						"          EmployeeKey as integer,",
+						"          EmployeeID as integer,",
+						"          NationalIDNumber as string,",
+						"          LoginID as string,",
+						"          JobTitle as string,",
+						"          BirthDate as date,",
+						"          Gender as string,",
+						"          CurrentFlag as boolean,",
+						"          HireDate as date,",
+						"          SalariedFlag as boolean,",
+						"          VacationHours as integer,",
+						"          SickLeaveHours as integer,",
+						"          TerritoryKey as integer,",
+						"          SalesPersonFlag as boolean",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimEmployee",
+						"source(output(",
+						"          DateSK as integer,",
+						"          FullDateAlternateKey as date,",
+						"          DayNumberOfWeek as integer,",
+						"          DayNameOfWeek as string,",
+						"          DayNumberOfMonth as integer,",
+						"          MonthName as string,",
+						"          MonthNumberOfYear as integer,",
+						"          CalendarQuarter as integer,",
+						"          CalendarYear as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimDate",
+						"source(output(",
+						"          ProductKey as integer,",
+						"          ProductID as integer,",
+						"          Name as string,",
+						"          FinishedGoodsFlag as boolean,",
+						"          Color as string,",
+						"          SafetyStockLevel as integer,",
+						"          ReorderPoint as integer,",
+						"          StandardCost as decimal(19,4),",
+						"          ListPrice as decimal(19,4),",
+						"          Size as string,",
+						"          Weight as decimal(8,2),",
+						"          DaysToManufacture as integer,",
+						"          ProductLine as string,",
+						"          Class as string,",
+						"          Style as string,",
+						"          ProductSubcategoryName as string,",
+						"          ProductCategoryName as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimProduct",
+						"DimVendors select(mapColumn(",
+						"          VendorKey,",
+						"          VendorID",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SelectDimVendors",
+						"datasource, SelectDimVendors lookup(datasource@VendorKey == VendorID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup1",
+						"lookup1, DimShipingMethod lookup(datasource@ShipMethodKey == ShipMethodID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup2",
+						"lookup5, DimEmployee lookup(datasource@EmployeeKey == EmployeeID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup3",
+						"lookup3, DimDate lookup(DateKey == FullDateAlternateKey,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup4",
+						"lookup2, DimProduct lookup(datasource@ProductKey == ProductID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup5",
+						"lookup4 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          PurchaseKey as integer,",
+						"          DateTimeKey as integer,",
+						"          PurchaseOrderKey as integer,",
+						"          EmployeeKey as integer,",
+						"          VendorKey as integer,",
+						"          ShipMethodKey as integer,",
+						"          ProductKey as integer,",
+						"          UnitPrice as decimal(19,4),",
+						"          OrderQty as integer,",
+						"          ReceivedQty as decimal(8,2),",
+						"          RejectedQty as decimal(8,2),",
+						"          AverageLeadTime as integer,",
+						"          LastReceiptDate as timestamp,",
+						"          LastReceiptCost as decimal(19,4),",
+						"          StandardPrice as decimal(19,4),",
+						"          MinOrderQty as integer,",
+						"          MaxOrderQty as integer,",
+						"          OrderDate as timestamp,",
+						"          ShipDate as timestamp,",
+						"          Status as integer,",
+						"          TaxAmt as decimal(19,4),",
+						"          Freight as decimal(19,4),",
+						"          TotalDue as decimal(19,4),",
+						"          StartDate as timestamp,",
+						"          EndDate as timestamp",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> FactPurchasing"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/FactSales')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"linkedService": {
+								"referenceName": "DB_Source",
+								"type": "LinkedServiceReference"
+							},
+							"name": "FactSalesSourceDB"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimPromotion_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimPromotion"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimCustomers_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimCustomer"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimProducts_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimProduct"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimEmployee_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimEmployee"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimShipingMethod_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimShipingMethod"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_DimSalesTerritory_DW",
+								"type": "DatasetReference"
+							},
+							"name": "DimSaleterritory"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_dim_date",
+								"type": "DatasetReference"
+							},
+							"name": "DimDate"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ds_FactSales_DW",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "lookup1"
+						},
+						{
+							"name": "lookup2"
+						},
+						{
+							"name": "lookup3"
+						},
+						{
+							"name": "lookup4"
+						},
+						{
+							"name": "lookup5"
+						},
+						{
+							"name": "lookup6"
+						},
+						{
+							"name": "lookup7"
+						},
+						{
+							"name": "select1"
+						},
+						{
+							"name": "select2"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          SalesOrderKey as integer,",
+						"          ProductID as integer,",
+						"          CustomerID as integer,",
+						"          SalesPersonID as integer,",
+						"          TerritoryID as integer,",
+						"          ShipMethodID as integer,",
+						"          SpecialOfferID as integer,",
+						"          DateSK as date,",
+						"          DueDate as timestamp,",
+						"          ShipDate as timestamp,",
+						"          Status as integer,",
+						"          OnlineOrderFlag as boolean,",
+						"          Freight as decimal(19,4),",
+						"          TaxAmt as decimal(19,4),",
+						"          OrderQty as short,",
+						"          UnitPriceDiscount as decimal(19,4),",
+						"          SubTotal as decimal(19,4),",
+						"          TotalPaid as decimal(19,4)",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'query',",
+						"     store: 'sqlserver',",
+						"     query: 'select [Sales].[SalesOrderHeader].SalesOrderID as SalesOrderKey\\n, [Sales].[SalesOrderDetail].ProductID\\n, CustomerID\\n, SalesPersonID --=EMPkey\\n, TerritoryID\\n, ShipMethodID\\n, [Sales].[SpecialOfferProduct].SpecialOfferID\\n, convert (date, OrderDate,2) as DateSK\\n, DueDate\\n, ShipDate\\n, Status \\n, OnlineOrderFlag\\n, Freight\\n, TaxAmt\\n, [Sales].[SalesOrderDetail].OrderQty\\n,[Sales].[SalesOrderDetail].[UnitPriceDiscount]\\n, [Sales].[SalesOrderHeader].SubTotal\\n, TotalDue as TotalPaid\\nfrom [Sales].[SalesOrderHeader]\\ninner join [Sales].[SalesOrderDetail]\\non [Sales].[SalesOrderDetail].SalesOrderID = [Sales].[SalesOrderHeader].SalesOrderID\\ninner join [Sales].[SpecialOfferProduct]\\non [Sales].[SpecialOfferProduct].ProductID = [Sales].[SalesOrderDetail].ProductID',",
+						"     isolationLevel: 'READ_UNCOMMITTED') ~> FactSalesSourceDB",
+						"source(output(",
+						"          PromotionKey as integer,",
+						"          PromotionID as integer,",
+						"          Description as string,",
+						"          DiscountPct as decimal(10,4),",
+						"          Type as string,",
+						"          Category as string,",
+						"          StartDate as timestamp,",
+						"          EndDate as timestamp,",
+						"          MinQty as integer,",
+						"          MaxQty as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimPromotion",
+						"source(output(",
+						"          CustomerKey as integer,",
+						"          CustomerID as integer,",
+						"          FirstName as string,",
+						"          LastName as string,",
+						"          EmailAddress as string,",
+						"          EmailPromotion as integer,",
+						"          PhoneNumber as string,",
+						"          TerritoryKey as integer,",
+						"          TransactionFlag as boolean",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimCustomer",
+						"source(output(",
+						"          ProductKey as integer,",
+						"          ProductID as integer,",
+						"          Name as string,",
+						"          FinishedGoodsFlag as boolean,",
+						"          Color as string,",
+						"          SafetyStockLevel as integer,",
+						"          ReorderPoint as integer,",
+						"          StandardCost as decimal(19,4),",
+						"          ListPrice as decimal(19,4),",
+						"          Size as string,",
+						"          Weight as decimal(8,2),",
+						"          DaysToManufacture as integer,",
+						"          ProductLine as string,",
+						"          Class as string,",
+						"          Style as string,",
+						"          ProductSubcategoryName as string,",
+						"          ProductCategoryName as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimProduct",
+						"source(output(",
+						"          EmployeeKey as integer,",
+						"          EmployeeID as integer,",
+						"          NationalIDNumber as string,",
+						"          LoginID as string,",
+						"          JobTitle as string,",
+						"          BirthDate as date,",
+						"          Gender as string,",
+						"          CurrentFlag as boolean,",
+						"          HireDate as date,",
+						"          SalariedFlag as boolean,",
+						"          VacationHours as integer,",
+						"          SickLeaveHours as integer,",
+						"          TerritoryKey as integer,",
+						"          SalesPersonFlag as boolean",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimEmployee",
+						"source(output(",
+						"          ShipMethodKey as integer,",
+						"          ShipMethodID as integer,",
+						"          Name as string,",
+						"          ShipBase as decimal(19,4),",
+						"          ShipRate as decimal(19,4)",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimShipingMethod",
+						"source(output(",
+						"          TerritoryKey as integer,",
+						"          TerritoryID as integer,",
+						"          TerritoryName as string,",
+						"          CountryRegionCode as string,",
+						"          TerritoryGroup as string,",
+						"          SalesYTD as decimal(19,4),",
+						"          SalesLastYear as decimal(19,4),",
+						"          CostYTD as decimal(19,4),",
+						"          CostLastYear as decimal(19,4)",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimSaleterritory",
+						"source(output(",
+						"          DateSK as integer,",
+						"          FullDateAlternateKey as date,",
+						"          DayNumberOfWeek as integer,",
+						"          DayNameOfWeek as string,",
+						"          DayNumberOfMonth as integer,",
+						"          MonthName as string,",
+						"          MonthNumberOfYear as integer,",
+						"          CalendarQuarter as integer,",
+						"          CalendarYear as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> DimDate",
+						"FactSalesSourceDB, select1 lookup(SpecialOfferID == PromotionID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup1",
+						"lookup1, select2 lookup(FactSalesSourceDB@CustomerID == select2@CustomerID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup2",
+						"lookup2, DimProduct lookup(FactSalesSourceDB@ProductID == DimProduct@ProductID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup3",
+						"lookup3, DimEmployee lookup(SalesPersonID == EmployeeID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup4",
+						"lookup4, DimShipingMethod lookup(FactSalesSourceDB@ShipMethodID == DimShipingMethod@ShipMethodID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup5",
+						"lookup5, DimSaleterritory lookup(FactSalesSourceDB@TerritoryID == DimSaleterritory@TerritoryID,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup6",
+						"lookup6, DimDate lookup(FactSalesSourceDB@DateSK == FullDateAlternateKey,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookup7",
+						"DimPromotion select(mapColumn(",
+						"          PromotionKey,",
+						"          PromotionID",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select1",
+						"DimCustomer select(mapColumn(",
+						"          CustomerKey,",
+						"          CustomerID",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> select2",
+						"lookup7 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          SalesKey as integer,",
+						"          OrderKey as integer,",
+						"          ProductKey as integer,",
+						"          CustomerKey as integer,",
+						"          SalesPersonKey as integer,",
+						"          TerritoryKey as integer,",
+						"          ShipMethodKey as integer,",
+						"          PromotionKey as integer,",
+						"          DateKey as date,",
+						"          DueDate as timestamp,",
+						"          ShipDate as timestamp,",
+						"          Status as integer,",
+						"          OnlineOrderFlag as boolean,",
+						"          Freight as decimal(19,4),",
+						"          TaxAmt as decimal(19,4),",
+						"          OrderQty as integer,",
+						"          UnitPriceDiscount as decimal(19,4),",
+						"          TotalProductCost as decimal(19,4),",
+						"          TotalPaid as decimal(19,4),",
+						"          StartDate as timestamp,",
+						"          EndDate as timestamp",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          OrderKey = SalesOrderKey,",
+						"          ProductKey,",
+						"          CustomerKey,",
+						"          SalesPersonKey = EmployeeKey,",
+						"          TerritoryKey = DimSaleterritory@TerritoryKey,",
+						"          ShipMethodKey,",
+						"          PromotionKey,",
+						"          DateKey = FullDateAlternateKey,",
+						"          DueDate,",
+						"          ShipDate,",
+						"          Status,",
+						"          OnlineOrderFlag,",
+						"          Freight,",
+						"          TaxAmt,",
+						"          OrderQty,",
+						"          UnitPriceDiscount,",
+						"          TotalProductCost = SubTotal,",
+						"          TotalPaid",
+						"     )) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LoadFactSales')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LoadFactSales",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "FactSales",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"FactSalesSourceDB": {},
+									"DimPromotion": {},
+									"DimCustomer": {},
+									"DimProduct": {},
+									"DimEmployee": {},
+									"DimShipingMethod": {},
+									"DimSaleterritory": {},
+									"DimDate": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-08T14:40:55Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/FactSales')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Load_FactPurchasing')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Load_FactPurchasing",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "FactPurchasing",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"datasource": {},
+									"DimVendors": {},
+									"DimShipingMethod": {},
+									"DimEmployee": {},
+									"DimDate": {},
+									"DimProduct": {},
+									"FactPurchasing": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-08T10:16:46Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/FactPurchasing')]"
+			]
+		}
+	]
+}
