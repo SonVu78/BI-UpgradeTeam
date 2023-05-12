@@ -49,15 +49,8 @@
 				"precision": 10
 			},
 			{
-				"name": "DateTimeKey",
-				"type": "int",
-				"precision": 10
-			},
-			{
-				"name": "OrderDate",
-				"type": "datetime",
-				"precision": 23,
-				"scale": 3
+				"name": "DateKey",
+				"type": "date"
 			},
 			{
 				"name": "DueDate",
