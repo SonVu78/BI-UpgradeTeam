@@ -6,4 +6,4 @@ In this project, I collaborated with my team to design a galaxy schema data mode
 We used data from AdvantureWorks 2019 database. 
 Data pipelines were built and monitored on Azure Data Factory to ETL data from the source into the data warehouse.
 
-This repository contains all about data pipelines, dataflow, data source,... in JSON format.    
+This repository contains all about data pipelines, dataflow, datasets, and more in JSON format.    
